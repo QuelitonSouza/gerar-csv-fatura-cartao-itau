@@ -6,7 +6,7 @@ O Itaú atualmente permite que a fatura seja baixada apenas em PDF ou Excel, que
 
 O modelo de CSV é baseado no formato utilizado pelo aplicativo [Meu Dinheiro](http://www.meudinheiroweb.com.br).
 
-![Opções de Download Itau](print_itau_opcoes)
+![Opções de Download Itau](print_itau_opcoes.png)
 
 ## Pré-requisitos
 
