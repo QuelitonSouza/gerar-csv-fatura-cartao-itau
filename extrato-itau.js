@@ -4,12 +4,13 @@
     if (csv) {
       var result = text.replace('.', '');
       if (result.indexOf('-') !== 0) {
-        result = result.split(' ')[1];
+        result = result.split(' ')[1]; // ["R$", "00,00"]
         return `-${result}`;
       }
       else {
-        result = result.split(' ')[1];
-        return result.replace('-', '');
+        result = result.split(' ')[2]; //["-", "R$", "\n00,00\n00,00"]
+        result = result.split('\n')[1]
+        return result.replace('-', ''); 
       }
     }
     else
@@ -90,10 +91,11 @@
   }
 
   const generateCsv = () => {
-    let ofx = "Data;Descricao;Valor\n"
+    let ofx = "Data;Cartão;Descricao;Valor\n"
 
     let datefilter = Date.parse(document.getElementById('datefilter').value);
     let tables = document.getElementsByClassName("fatura__table fatura__table--agrupada");
+    let names = document.getElementsByClassName("fatura__nome ng-binding")
 
     for (var x = 0; x < tables.length; x++) {
 
@@ -124,6 +126,10 @@
           if (rows[i].cells[1])
             desc = `${rows[i].cells[1].innerText}`;
 
+          let user = ""
+          if (names[x]?.innerText)
+            user = names[x].innerText
+
           let valor = ""
           if (rows[i].cells[2]) {
 
@@ -136,7 +142,7 @@
           }
 
           if (valor !== "") {
-            ofx += `${time};${desc};${valor}\n`;
+            ofx += `${time};${user};${desc};${valor}\n`;
           }
         }
       }
