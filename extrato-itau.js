@@ -73,6 +73,7 @@
   }
 
   const exportCsv = (csv) => {
+    debugger;
     const period = nameFile();
     link = document.createElement("a");
     link.setAttribute("href", 'data:application/vnd.ms-excel,' + encodeURIComponent(csv));
@@ -81,20 +82,44 @@
   }
 
   const nameFile = () => {
-    let title = document.getElementsByClassName("header-invoice__tittle")[0].innerText;
-
-    if (title.split(' ').length > 2) {
-      return title.split(' ')[2];
+    const el = document.getElementsByClassName("header-invoice__tittle")[0];
+    if (el && el.innerText) {
+      const title = el.innerText;
+      if (title.split(' ').length > 2) {
+        return title.split(' ')[2];
+      }
+      return title;
     }
-
-    return title;
+    // Fallback: yyyymmdd-hhmm when header title is not found (site changed)
+    const now = new Date();
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}`;
   }
 
   const generateCsv = () => {
-    let ofx = "Data;Cartão;Descricao;Valor\n"
+    let ofx = "Data;Cartao;Descricao;Valor\n"
+
+    debugger;
 
     let datefilter = Date.parse(document.getElementById('datefilter').value);
-    let tables = document.getElementsByClassName("fatura__table fatura__table--agrupada");
+
+
+    // 1. Primeiro elemento com shadowRoot
+    let outer = document.querySelector('#render-mf-shell-bkl-cartoes-pf')
+      .querySelector('mf-shell-bkl-cartoes-pf').shadowRoot;
+
+    // 2. Dentro dele, o wrapper
+    let wrapper = outer.querySelector('mft-wc-wrapper');
+
+    // 3. Segundo componente com shadowRoot
+    let innerRoot = wrapper
+      .querySelector('mf-cartoesconsultafaturapfmf').shadowRoot;
+
+    // 4. Finalmente a tabela
+    let tables = innerRoot.querySelector(
+      '#ids-tabs-0-panel-1 mf-fatura-transactions-details table'
+    );
+
     let names = document.getElementsByClassName("fatura__nome ng-binding")
 
     for (var x = 0; x < tables.length; x++) {
@@ -151,42 +176,103 @@
     exportCsv(ofx);
   }
 
-  function sleep(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-  }
+  // UI helpers: floating button and panel with controls
+  const removeIfExists = (selector) => {
+    const el = document.querySelector(selector);
+    if (el && el.parentNode) el.parentNode.removeChild(el);
+  };
 
-  async function contarComDelay() {
-    let contador = 0;
+  const createOrRecreatePanel = () => {
 
-    while (true) {
-      console.log("O contador é: " + contador);
-      contador++;
+    debugger;
+    // Remove any existing panel and controls
+    removeIfExists('#itau-export-panel');
+    // Create panel container
+    const panel = document.createElement('div');
+    panel.id = 'itau-export-panel';
+    panel.style.cssText = [
+      'position:fixed',
+      'right:24px',
+      'bottom:90px',
+      'z-index:2147483647',
+      'background:#fff',
+      'border:1px solid #ddd',
+      'border-radius:12px',
+      'box-shadow:0 6px 20px rgba(0,0,0,0.15)',
+      'padding:12px',
+      'display:flex',
+      'gap:8px',
+      'align-items:center',
+      'font-family:inherit'
+    ].join(';');
 
-      let div = document.getElementsByClassName("header-invoice-details header-invoice-details--align header-invoice-details--mrg-sm")[0];
-      console.log(div);
-      if (div !== null && div !== undefined) {
-        let newDate = document.createElement("input");
-        newDate.setAttribute("type", "date");
-        newDate.setAttribute("id", "datefilter");
-        newDate.style.cssText = 'color:#FF6200;background-color:white;position:absolute;top:0.3%;right:30%;z-index: 999999;padding:3px';
-        div.appendChild(newDate);
+    const label = document.createElement('label');
+    label.setAttribute('for', 'datefilter');
+    label.textContent = 'Data mínima:';
+    label.style.cssText = 'margin-right:4px;color:#333;font-size:12px;';
 
-        let btn = document.createElement("button");
-        btn.innerHTML = "Exportar para CSV";
-        btn.style.cssText = 'color:white;background-color:#FF6200;position:absolute;top:0.3%;right:45%;z-index: 999999;padding:4px;margin-right:4px';
-        btn.setAttribute('role', 'gen-csv');
-        btn.textContent = "Exportar para CSV";
-        btn.addEventListener('click', generateCsv);
-        div.appendChild(btn);
+    const newDate = document.createElement('input');
+    newDate.type = 'date';
+    newDate.id = 'datefilter';
+    newDate.style.cssText = 'color:#FF6200;background-color:white;border:1px solid #ddd;border-radius:6px;padding:6px;';
 
-        break;
+    const btn = document.createElement('button');
+    btn.setAttribute('data-role', 'gen-csv');
+    btn.textContent = 'Exportar para CSV';
+    btn.style.cssText = 'color:white;background-color:#FF6200;border:none;border-radius:6px;padding:8px 10px;cursor:pointer;';
+    btn.addEventListener('click', generateCsv);
+
+    panel.appendChild(label);
+    panel.appendChild(newDate);
+    panel.appendChild(btn);
+
+    document.body.appendChild(panel);
+  };
+
+  const ensureFloatingButton = () => {
+    let fab = document.getElementById('itau-export-fab');
+    if (fab) return fab;
+
+console.log(`passou`)
+
+    fab = document.createElement('button');
+    fab.id = 'itau-export-fab';
+    fab.title = 'Exportar extrato (CSV)';
+    fab.textContent = 'CSV-5';
+    fab.style.cssText = [
+      'position:fixed',
+      'right:24px',
+      'bottom:24px',
+      'width:56px',
+      'height:56px',
+      'border-radius:50%',
+      'background:#FF6200',
+      'color:#fff',
+      'border:none',
+      'box-shadow:0 6px 12px rgba(0,0,0,0.2)',
+      'cursor:pointer',
+      'z-index:2147483647',
+      'font-weight:700'
+    ].join(';');
+
+    fab.addEventListener('click', () => {
+      const panel = document.getElementById('itau-export-panel');
+      if (panel) {
+        panel.remove();
+      } else {
+        createOrRecreatePanel();
       }
+    });
 
-      await sleep(3000);
-    }
+    document.body.appendChild(fab);
+    return fab;
+  };
+
+  // Initialize floating UI on page load
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', ensureFloatingButton);
+  } else {
+    ensureFloatingButton();
   }
-
-  await contarComDelay();
 
 })();
-
