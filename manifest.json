@@ -14,8 +14,6 @@
     {
       "matches": ["https://*.itau.com.br/*"],
       "exclude_matches": [
-        "https://*.itau.com.br/*login*",
-        "https://*.itau.com.br/*logout*"
       ],
       "js": ["extrato-itau.js"],
       "run_at": "document_idle",

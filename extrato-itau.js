@@ -4,13 +4,18 @@
     if (csv) {
       var result = text.replace('.', '');
       if (result.indexOf('-') !== 0) {
-        result = result.split(' ')[1]; // ["R$", "00,00"]
-        return `-${result}`;
+        let valor = result.split(' ')[1];
+        if (isNaN(valor))
+          valor = result.split(' ')[1];
+
+        return `-${valor}`;
       }
       else {
-        result = result.split(' ')[2]; //["-", "R$", "\n00,00\n00,00"]
-        result = result.split('\n')[1]
-        return result.replace('-', ''); 
+        let valor = result.split(' ')[1];
+        if (isNaN(valor))
+          valor = result.split(' ')[1];
+
+        return valor.replace('-', '');
       }
     }
     else
@@ -18,7 +23,7 @@
   }
 
   const normalizeDay = (date) => {
-    let day = (date.split('/')[0]).trim().toString().padStart(2, '0');
+    let day = (date.split(' ')[0]).trim().toString().padStart(2, '0');
     return day;
   }
 
@@ -32,7 +37,7 @@
   }
 
   const normalizeMonth = (date) => {
-    const month = capitalizeFirstLetter(date.split('/')[1]).trim().toLowerCase();
+    const month = capitalizeFirstLetter(date.split(' ')[1]).trim().toLowerCase();
     const months = {
       'jan': '01',
       'fev': '02',
@@ -46,6 +51,18 @@
       'out': '10',
       'nov': '11',
       'dez': '12',
+      'jan.': '01',
+      'fev.': '02',
+      'mar.': '03',
+      'abr.': '04',
+      'mai.': '05',
+      'jun.': '06',
+      'jul.': '07',
+      'ago.': '08',
+      'set.': '09',
+      'out.': '10',
+      'nov.': '11',
+      'dez.': '12',
     }
 
     return months[month];
@@ -73,7 +90,6 @@
   }
 
   const exportCsv = (csv) => {
-    debugger;
     const period = nameFile();
     link = document.createElement("a");
     link.setAttribute("href", 'data:application/vnd.ms-excel,' + encodeURIComponent(csv));
@@ -97,78 +113,61 @@
   }
 
   const generateCsv = () => {
-    let ofx = "Data;Cartao;Descricao;Valor\n"
-
-    debugger;
+    let ofx = "Data;Descricao;Valor\n"
 
     let datefilter = Date.parse(document.getElementById('datefilter').value);
 
+    let section1;
+    try {
+      section1 =  document.querySelector("#render-mf-shell-bkl-cartoes-pf > mf-shell-bkl-cartoes-pf > mft-wc-wrapper > div > mf-cartoesconsultafaturapfmf").shadowRoot; 
+    } catch (error) {
+      section1 = document.querySelector("#render-mf-shell-bkl-cartoes-pf > mf-shell-bkl-cartoes-pf > mft-wc-wrapper > div > mf-cartoesconsultafaturapfmf");  
+    }
+  
+    let section2 = section1.querySelector("#ids-tabs-0-panel-1");
+    let section3 = section2.querySelector("mf-fatura-transactions-details");
+    let tables = section3.querySelector("div > table");
 
-    // 1. Primeiro elemento com shadowRoot
-    let outer = document.querySelector('#render-mf-shell-bkl-cartoes-pf')
-      .querySelector('mf-shell-bkl-cartoes-pf').shadowRoot;
+    let rows = tables.rows;
+    let time = "";
+    let dataparse = "";
 
-    // 2. Dentro dele, o wrapper
-    let wrapper = outer.querySelector('mft-wc-wrapper');
+    for (var i = 0; i < rows.length; i++) {
 
-    // 3. Segundo componente com shadowRoot
-    let innerRoot = wrapper
-      .querySelector('mf-cartoesconsultafaturapfmf').shadowRoot;
+      if (rows[i].cells[0].innerText.indexOf('data') !== -1) {
+        continue;
+      }
 
-    // 4. Finalmente a tabela
-    let tables = innerRoot.querySelector(
-      '#ids-tabs-0-panel-1 mf-fatura-transactions-details table'
-    );
+      let timerow = "";
+      if (rows[i].cells[0].innerText !== "") {
+        timerow = `${rows[i].cells[0].innerText}`;
+        if (timerow == "" && time !== "") {
+          timerow = time;
+        }
+        else {
+          time = normalizeDate(timerow, true);
+          dataparse = Date.parse(`${time.substr(6, 4)}-${time.substr(3, 2)}-${time.substr(0, 2)}`)
+        }
+      }
 
-    let names = document.getElementsByClassName("fatura__nome ng-binding")
+      if (isNaN(datefilter) || dataparse >= datefilter) {
+        let desc = ""
+        if (rows[i].cells[1])
+          desc = `${rows[i].cells[1].innerText}`;
 
-    for (var x = 0; x < tables.length; x++) {
+        let valor = ""
+        if (rows[i].cells[2]) {
 
-      let rows = tables[x].rows;
-      let time = "";
-      let dataparse = "";
+          if (desc.toLowerCase().indexOf("pagamento recebido") == 0)
+            valor = `-${rows[i].cells[2].innerText}`;
+          else
+            valor = `${rows[i].cells[2].innerText}`;
 
-      for (var i = 0; i < rows.length; i++) {
-
-        if (rows[i].cells[0].innerText.indexOf('data') == 0) {
-          continue;
+          valor = normalizeAmount(valor, true);
         }
 
-        let timerow = "";
-        if (rows[i].cells[0].innerText !== "") {
-          timerow = `${rows[i].cells[0].innerText}`;
-          if (timerow == "" && time !== "") {
-            timerow = time;
-          }
-          else {
-            time = normalizeDate(timerow, true);
-            dataparse = Date.parse(`${time.substr(6, 4)}-${time.substr(3, 2)}-${time.substr(0, 2)}`)
-          }
-        }
-
-        if (isNaN(datefilter) || dataparse >= datefilter) {
-          let desc = ""
-          if (rows[i].cells[1])
-            desc = `${rows[i].cells[1].innerText}`;
-
-          let user = ""
-          if (names[x]?.innerText)
-            user = names[x].innerText
-
-          let valor = ""
-          if (rows[i].cells[2]) {
-
-            if (desc.toLowerCase().indexOf("pagamento recebido") == 0)
-              valor = `-${rows[i].cells[2].innerText}`;
-            else
-              valor = `${rows[i].cells[2].innerText}`;
-
-            valor = normalizeAmount(valor, true);
-          }
-
-          if (valor !== "") {
-            ofx += `${time};${user};${desc};${valor}\n`;
-          }
+        if (valor !== "") {
+          ofx += `${time};${desc};${valor}\n`;
         }
       }
     }
@@ -184,7 +183,6 @@
 
   const createOrRecreatePanel = () => {
 
-    debugger;
     // Remove any existing panel and controls
     removeIfExists('#itau-export-panel');
     // Create panel container
@@ -233,12 +231,10 @@
     let fab = document.getElementById('itau-export-fab');
     if (fab) return fab;
 
-console.log(`passou`)
-
     fab = document.createElement('button');
     fab.id = 'itau-export-fab';
     fab.title = 'Exportar extrato (CSV)';
-    fab.textContent = 'CSV-5';
+    fab.textContent = 'CSV';
     fab.style.cssText = [
       'position:fixed',
       'right:24px',
@@ -268,11 +264,48 @@ console.log(`passou`)
     return fab;
   };
 
-  // Initialize floating UI on page load
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', ensureFloatingButton);
-  } else {
-    ensureFloatingButton();
+  function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
   }
+
+  async function contarComDelay() {
+    let contador = 0;
+
+    while (true) {
+      console.log("O contador é: " + contador);
+      contador++;
+
+      try {
+
+        let section = document.querySelector("#render-mf-shell-bkl-cartoes-pf > mf-shell-bkl-cartoes-pf > mft-wc-wrapper > div > mf-cartoesconsultafaturapfmf").shadowRoot;
+        let h1 = section.querySelector("mf-fatura-main > mf-fatura-lib > div > h1");
+
+        console.log(h1);
+        if (h1 !== null && h1 !== undefined) {
+          ensureFloatingButton();
+          break;
+        }
+      } catch (error) {
+        try {
+
+          let section = document.querySelector("#render-mf-shell-bkl-cartoes-pf > mf-shell-bkl-cartoes-pf > mft-wc-wrapper > div > mf-cartoesconsultafaturapfmf");
+          let h1 = section.querySelector("mf-fatura-main > mf-fatura-lib > div > h1");
+
+          console.log(h1);
+          if (h1 !== null && h1 !== undefined) {
+            ensureFloatingButton();
+            break;
+          }
+        } catch (error) {
+
+        }
+      }
+
+      await sleep(3000);
+    }
+  }
+
+  await contarComDelay();
+
 
 })();
