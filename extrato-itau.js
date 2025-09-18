@@ -4,13 +4,18 @@
     if (csv) {
       var result = text.replace('.', '');
       if (result.indexOf('-') !== 0) {
-        result = result.split(' ')[1]; // ["R$", "00,00"]
-        return `-${result}`;
+        let valor = result.split(' ')[1];
+        if (isNaN(valor))
+          valor = result.split(' ')[1];
+
+        return `-${valor}`;
       }
       else {
-        result = result.split(' ')[2]; //["-", "R$", "\n00,00\n00,00"]
-        result = result.split('\n')[1]
-        return result.replace('-', ''); 
+        let valor = result.split(' ')[1];
+        if (isNaN(valor))
+          valor = result.split(' ')[1];
+
+        return valor.replace('-', '');
       }
     }
     else
@@ -18,7 +23,7 @@
   }
 
   const normalizeDay = (date) => {
-    let day = (date.split('/')[0]).trim().toString().padStart(2, '0');
+    let day = (date.split(' ')[0]).trim().toString().padStart(2, '0');
     return day;
   }
 
@@ -32,7 +37,7 @@
   }
 
   const normalizeMonth = (date) => {
-    const month = capitalizeFirstLetter(date.split('/')[1]).trim().toLowerCase();
+    const month = capitalizeFirstLetter(date.split(' ')[1]).trim().toLowerCase();
     const months = {
       'jan': '01',
       'fev': '02',
@@ -46,6 +51,18 @@
       'out': '10',
       'nov': '11',
       'dez': '12',
+      'jan.': '01',
+      'fev.': '02',
+      'mar.': '03',
+      'abr.': '04',
+      'mai.': '05',
+      'jun.': '06',
+      'jul.': '07',
+      'ago.': '08',
+      'set.': '09',
+      'out.': '10',
+      'nov.': '11',
+      'dez.': '12',
     }
 
     return months[month];
@@ -81,75 +98,171 @@
   }
 
   const nameFile = () => {
-    let title = document.getElementsByClassName("header-invoice__tittle")[0].innerText;
-
-    if (title.split(' ').length > 2) {
-      return title.split(' ')[2];
+    const el = document.getElementsByClassName("header-invoice__tittle")[0];
+    if (el && el.innerText) {
+      const title = el.innerText;
+      if (title.split(' ').length > 2) {
+        return title.split(' ')[2];
+      }
+      return title;
     }
-
-    return title;
+    // Fallback: yyyymmdd-hhmm when header title is not found (site changed)
+    const now = new Date();
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}`;
   }
 
   const generateCsv = () => {
-    let ofx = "Data;Cartão;Descricao;Valor\n"
+    let ofx = "Data;Descricao;Valor\n"
 
     let datefilter = Date.parse(document.getElementById('datefilter').value);
-    let tables = document.getElementsByClassName("fatura__table fatura__table--agrupada");
-    let names = document.getElementsByClassName("fatura__nome ng-binding")
 
-    for (var x = 0; x < tables.length; x++) {
+    let section1;
+    try {
+      section1 =  document.querySelector("#render-mf-shell-bkl-cartoes-pf > mf-shell-bkl-cartoes-pf > mft-wc-wrapper > div > mf-cartoesconsultafaturapfmf").shadowRoot; 
+    } catch (error) {
+      section1 = document.querySelector("#render-mf-shell-bkl-cartoes-pf > mf-shell-bkl-cartoes-pf > mft-wc-wrapper > div > mf-cartoesconsultafaturapfmf");  
+    }
+  
+    let section2 = section1.querySelector("#ids-tabs-0-panel-1");
+    let section3 = section2.querySelector("mf-fatura-transactions-details");
+    let tables = section3.querySelector("div > table");
 
-      let rows = tables[x].rows;
-      let time = "";
-      let dataparse = "";
+    let rows = tables.rows;
+    let time = "";
+    let dataparse = "";
 
-      for (var i = 0; i < rows.length; i++) {
+    for (var i = 0; i < rows.length; i++) {
 
-        if (rows[i].cells[0].innerText.indexOf('data') == 0) {
-          continue;
+      if (rows[i].cells[0].innerText.indexOf('data') !== -1) {
+        continue;
+      }
+
+      let timerow = "";
+      if (rows[i].cells[0].innerText !== "") {
+        timerow = `${rows[i].cells[0].innerText}`;
+        if (timerow == "" && time !== "") {
+          timerow = time;
+        }
+        else {
+          time = normalizeDate(timerow, true);
+          dataparse = Date.parse(`${time.substr(6, 4)}-${time.substr(3, 2)}-${time.substr(0, 2)}`)
+        }
+      }
+
+      if (isNaN(datefilter) || dataparse >= datefilter) {
+        let desc = ""
+        if (rows[i].cells[1])
+          desc = `${rows[i].cells[1].innerText}`;
+
+        let valor = ""
+        if (rows[i].cells[2]) {
+
+          if (desc.toLowerCase().indexOf("pagamento recebido") == 0)
+            valor = `-${rows[i].cells[2].innerText}`;
+          else
+            valor = `${rows[i].cells[2].innerText}`;
+
+          valor = normalizeAmount(valor, true);
         }
 
-        let timerow = "";
-        if (rows[i].cells[0].innerText !== "") {
-          timerow = `${rows[i].cells[0].innerText}`;
-          if (timerow == "" && time !== "") {
-            timerow = time;
-          }
-          else {
-            time = normalizeDate(timerow, true);
-            dataparse = Date.parse(`${time.substr(6, 4)}-${time.substr(3, 2)}-${time.substr(0, 2)}`)
-          }
-        }
-
-        if (isNaN(datefilter) || dataparse >= datefilter) {
-          let desc = ""
-          if (rows[i].cells[1])
-            desc = `${rows[i].cells[1].innerText}`;
-
-          let user = ""
-          if (names[x]?.innerText)
-            user = names[x].innerText
-
-          let valor = ""
-          if (rows[i].cells[2]) {
-
-            if (desc.toLowerCase().indexOf("pagamento recebido") == 0)
-              valor = `-${rows[i].cells[2].innerText}`;
-            else
-              valor = `${rows[i].cells[2].innerText}`;
-
-            valor = normalizeAmount(valor, true);
-          }
-
-          if (valor !== "") {
-            ofx += `${time};${user};${desc};${valor}\n`;
-          }
+        if (valor !== "") {
+          ofx += `${time};${desc};${valor}\n`;
         }
       }
     }
 
     exportCsv(ofx);
   }
+
+  // UI helpers: floating button and panel with controls
+  const removeIfExists = (selector) => {
+    const el = document.querySelector(selector);
+    if (el && el.parentNode) el.parentNode.removeChild(el);
+  };
+
+  const createOrRecreatePanel = () => {
+
+    // Remove any existing panel and controls
+    removeIfExists('#itau-export-panel');
+    // Create panel container
+    const panel = document.createElement('div');
+    panel.id = 'itau-export-panel';
+    panel.style.cssText = [
+      'position:fixed',
+      'right:24px',
+      'bottom:90px',
+      'z-index:2147483647',
+      'background:#fff',
+      'border:1px solid #ddd',
+      'border-radius:12px',
+      'box-shadow:0 6px 20px rgba(0,0,0,0.15)',
+      'padding:12px',
+      'display:flex',
+      'gap:8px',
+      'align-items:center',
+      'font-family:inherit'
+    ].join(';');
+
+    const label = document.createElement('label');
+    label.setAttribute('for', 'datefilter');
+    label.textContent = 'Data mínima:';
+    label.style.cssText = 'margin-right:4px;color:#333;font-size:12px;';
+
+    const newDate = document.createElement('input');
+    newDate.type = 'date';
+    newDate.id = 'datefilter';
+    newDate.style.cssText = 'color:#FF6200;background-color:white;border:1px solid #ddd;border-radius:6px;padding:6px;';
+
+    const btn = document.createElement('button');
+    btn.setAttribute('data-role', 'gen-csv');
+    btn.textContent = 'Exportar para CSV';
+    btn.style.cssText = 'color:white;background-color:#FF6200;border:none;border-radius:6px;padding:8px 10px;cursor:pointer;';
+    btn.addEventListener('click', generateCsv);
+
+    panel.appendChild(label);
+    panel.appendChild(newDate);
+    panel.appendChild(btn);
+
+    document.body.appendChild(panel);
+  };
+
+  const ensureFloatingButton = () => {
+    let fab = document.getElementById('itau-export-fab');
+    if (fab) return fab;
+
+    fab = document.createElement('button');
+    fab.id = 'itau-export-fab';
+    fab.title = 'Exportar extrato (CSV)';
+    fab.textContent = 'CSV';
+    fab.style.cssText = [
+      'position:fixed',
+      'right:24px',
+      'bottom:24px',
+      'width:56px',
+      'height:56px',
+      'border-radius:50%',
+      'background:#FF6200',
+      'color:#fff',
+      'border:none',
+      'box-shadow:0 6px 12px rgba(0,0,0,0.2)',
+      'cursor:pointer',
+      'z-index:2147483647',
+      'font-weight:700'
+    ].join(';');
+
+    fab.addEventListener('click', () => {
+      const panel = document.getElementById('itau-export-panel');
+      if (panel) {
+        panel.remove();
+      } else {
+        createOrRecreatePanel();
+      }
+    });
+
+    document.body.appendChild(fab);
+    return fab;
+  };
 
   function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
@@ -162,24 +275,30 @@
       console.log("O contador é: " + contador);
       contador++;
 
-      let div = document.getElementsByClassName("header-invoice-details header-invoice-details--align header-invoice-details--mrg-sm")[0];
-      console.log(div);
-      if (div !== null && div !== undefined) {
-        let newDate = document.createElement("input");
-        newDate.setAttribute("type", "date");
-        newDate.setAttribute("id", "datefilter");
-        newDate.style.cssText = 'color:#FF6200;background-color:white;position:absolute;top:0.3%;right:30%;z-index: 999999;padding:3px';
-        div.appendChild(newDate);
+      try {
 
-        let btn = document.createElement("button");
-        btn.innerHTML = "Exportar para CSV";
-        btn.style.cssText = 'color:white;background-color:#FF6200;position:absolute;top:0.3%;right:45%;z-index: 999999;padding:4px;margin-right:4px';
-        btn.setAttribute('role', 'gen-csv');
-        btn.textContent = "Exportar para CSV";
-        btn.addEventListener('click', generateCsv);
-        div.appendChild(btn);
+        let section = document.querySelector("#render-mf-shell-bkl-cartoes-pf > mf-shell-bkl-cartoes-pf > mft-wc-wrapper > div > mf-cartoesconsultafaturapfmf").shadowRoot;
+        let h1 = section.querySelector("mf-fatura-main > mf-fatura-lib > div > h1");
 
-        break;
+        console.log(h1);
+        if (h1 !== null && h1 !== undefined) {
+          ensureFloatingButton();
+          break;
+        }
+      } catch (error) {
+        try {
+
+          let section = document.querySelector("#render-mf-shell-bkl-cartoes-pf > mf-shell-bkl-cartoes-pf > mft-wc-wrapper > div > mf-cartoesconsultafaturapfmf");
+          let h1 = section.querySelector("mf-fatura-main > mf-fatura-lib > div > h1");
+
+          console.log(h1);
+          if (h1 !== null && h1 !== undefined) {
+            ensureFloatingButton();
+            break;
+          }
+        } catch (error) {
+
+        }
       }
 
       await sleep(3000);
@@ -188,5 +307,5 @@
 
   await contarComDelay();
 
-})();
 
+})();
