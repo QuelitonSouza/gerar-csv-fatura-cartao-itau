@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <a href="https://chrome.google.com/webstore/detail/SEU_ID_AQUI">
+  <a href="https://chromewebstore.google.com/detail/emfohciinphonpoklgkfndhpfbpikhll?utm_source=item-share-cb">
     <img src="https://img.shields.io/badge/Chrome-Instalar-4285F4?style=for-the-badge&logo=googlechrome&logoColor=white" alt="Chrome Web Store">
   </a>
 </p>
@@ -26,7 +26,7 @@
 ### Opções de Exportação
 
 <p align="center">
-  <img src="promo-letreiro.png" alt="Opções de Download" width="300">
+  <img src="promo-letreiro.png" alt="Opções de Download" width="600">
 </p>
 
 ---
