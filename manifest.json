@@ -1,9 +1,9 @@
 {
   "manifest_version": 3,
-  "name": "Itau Gerar CSV",
-  "short_name": "Itau CSV",
-  "description": "Adiciona botão para exportação da fatura em aberto para CSV",
-  "version": "3.0.6",
+  "name": "Itaú Exportar Fatura CSV/OFX",
+  "short_name": "Itaú Fatura",
+  "description": "Exporte sua fatura do cartão Itaú para CSV ou OFX. Compatível com Excel, Google Sheets e apps financeiros.",
+  "version": "3.0.7",
   "icons": {
     "16": "itau-16.png",
     "32": "itau-16.png",
