@@ -64,7 +64,7 @@
 
 1. Clone ou baixe este repositório:
    ```bash
-   git clone https://github.com/SEU_USUARIO/gerar-csv-fatura-cartao-itau.git
+   git clone https://github.com/QuelitonSouza/gerar-csv-fatura-cartao-itau.git
    ```
 
 2. Abra o Chrome e acesse `chrome://extensions/`
