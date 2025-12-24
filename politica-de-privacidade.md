@@ -1,21 +1,16 @@
-**Política de Privacidade**
+POLÍTICA DE PRIVACIDADE - Itaú Exportar Fatura CSV/OFX
 
-Última atualização: [Data]
+Esta extensão:
 
-Nós valorizamos a sua privacidade. Informamos que o nosso aplicativo **não coleta, armazena ou processa quaisquer dados pessoais dos usuários**. 
+1. NÃO coleta dados pessoais
+2. NÃO envia informações para servidores externos  
+3. NÃO armazena senhas ou credenciais bancárias
+4. NÃO rastreia sua navegação
 
-**1. Coleta de Informações Pessoais**
-Nosso aplicativo não coleta informações pessoais como nome, endereço, e-mail, número de telefone ou dados de pagamento.
+A extensão funciona 100% localmente no seu navegador, processando os dados da fatura apenas quando você solicita a exportação. Os arquivos gerados são salvos diretamente no seu computador.
 
-**2. Armazenamento de Dados**
-Como não coletamos informações pessoais, não armazenamos nenhum dado pessoal em nossos servidores ou em qualquer outro local.
+Permissões utilizadas:
+- Acesso ao site itau.com.br: Necessário para detectar a página de fatura e extrair os dados das transações.
 
-**3. Compartilhamento de Informações**
-Nenhum dado pessoal é coletado, portanto, não há informações a serem compartilhadas com terceiros.
-
-**4. Uso de Dados**
-Nosso aplicativo opera de forma independente e não faz uso de qualquer dado pessoal dos usuários.
-
-**5. Mudanças na Política**
-Esta Política de Privacidade pode ser atualizada de tempos em tempos. Recomendamos que você revise esta página periodicamente para estar ciente de eventuais alterações.
-
+Contato: https://www.linkedin.com/in/qspires/
+Última atualização: Dezembro 2024
