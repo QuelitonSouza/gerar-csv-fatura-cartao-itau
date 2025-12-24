@@ -49,9 +49,26 @@
   ];
 
   /**
-   * Timeout máximo para aguardar elementos (ms)
+   * Timeout máximo para aguardar elementos (ms) - 5 minutos
    */
-  const OBSERVER_TIMEOUT = 30000;
+  const OBSERVER_TIMEOUT = 300000;
+
+  /**
+   * Intervalo de polling para verificar página (ms)
+   */
+  const POLLING_INTERVAL = 2000;
+
+  /**
+   * Seletores para detectar a página de fatura
+   */
+  const INVOICE_SELECTORS = [
+    'mf-cartoesconsultafaturapfmf',
+    'mf-shell-bkl-cartoes-pf',
+    '[class*="fatura"]',
+    '[id*="fatura"]',
+    '[class*="cartoes"]',
+    '[id*="cartoes"]'
+  ];
 
   // ============================================================================
   // UTILITÁRIOS DE SHADOW DOM
@@ -114,50 +131,95 @@
    * @returns {HTMLTableElement|null} - Tabela de transações ou null
    */
   const findTransactionsTable = () => {
+    console.log('[Itau Export DEBUG] findTransactionsTable() iniciado');
+
     // Estratégia 1: Buscar pelo componente principal de fatura
     const mainComponent = document.querySelector('mf-cartoesconsultafaturapfmf');
+    console.log('[Itau Export DEBUG] mainComponent (mf-cartoesconsultafaturapfmf):', mainComponent ? 'ENCONTRADO' : 'NÃO ENCONTRADO');
+
     if (mainComponent) {
+      // Log dos filhos do componente principal
+      console.log('[Itau Export DEBUG] mainComponent.children:', mainComponent.children.length, 'elementos');
+      console.log('[Itau Export DEBUG] mainComponent tem shadowRoot?', !!mainComponent.shadowRoot);
+
       // Busca pela tabela de detalhes de transações
-      const table = queryShadowDOM(mainComponent, 'mf-fatura-transactions-details', { partial: true });
-      if (table) {
-        const actualTable = queryShadowDOM(table, 'table') || table.querySelector('table');
-        if (actualTable) return actualTable;
+      const transactionsDetails = queryShadowDOM(mainComponent, 'mf-fatura-transactions-details', { partial: true });
+      console.log('[Itau Export DEBUG] mf-fatura-transactions-details:', transactionsDetails ? 'ENCONTRADO' : 'NÃO ENCONTRADO');
+
+      if (transactionsDetails) {
+        const actualTable = queryShadowDOM(transactionsDetails, 'table') || transactionsDetails.querySelector('table');
+        console.log('[Itau Export DEBUG] table em transactionsDetails:', actualTable ? 'ENCONTRADO' : 'NÃO ENCONTRADO');
+        if (actualTable) {
+          console.log('[Itau Export DEBUG] Tabela encontrada via Estratégia 1a! Rows:', actualTable.rows?.length);
+          return actualTable;
+        }
       }
 
       // Fallback: busca direta por tabela com classe details
       const detailsTable = queryShadowDOM(mainComponent, 'details__table', { partial: true });
-      if (detailsTable && detailsTable.tagName === 'TABLE') return detailsTable;
+      console.log('[Itau Export DEBUG] busca por details__table:', detailsTable?.tagName || 'NÃO ENCONTRADO');
+      if (detailsTable && detailsTable.tagName === 'TABLE') {
+        console.log('[Itau Export DEBUG] Tabela encontrada via Estratégia 1b!');
+        return detailsTable;
+      }
+
+      // Estratégia 1c: Buscar diretamente por tabela dentro do mainComponent
+      const directTable = mainComponent.querySelector('table');
+      console.log('[Itau Export DEBUG] busca direta por table:', directTable ? 'ENCONTRADO' : 'NÃO ENCONTRADO');
+      if (directTable) {
+        console.log('[Itau Export DEBUG] Tabela encontrada via Estratégia 1c! Rows:', directTable.rows?.length);
+        return directTable;
+      }
     }
 
     // Estratégia 2: Buscar em shadow roots conhecidos
     const shellComponent = document.querySelector('#render-mf-shell-bkl-cartoes-pf mf-shell-bkl-cartoes-pf');
+    console.log('[Itau Export DEBUG] shellComponent:', shellComponent ? 'ENCONTRADO' : 'NÃO ENCONTRADO');
     if (shellComponent) {
       const table = queryShadowDOM(shellComponent, 'table.details__table');
-      if (table) return table;
+      if (table) {
+        console.log('[Itau Export DEBUG] Tabela encontrada via Estratégia 2!');
+        return table;
+      }
     }
 
     // Estratégia 3: Buscar qualquer tabela com classe de detalhes
     const anyTable = queryShadowDOM(document.body, 'details__table', { partial: true });
-    if (anyTable) return anyTable;
+    console.log('[Itau Export DEBUG] busca geral por details__table:', anyTable ? 'ENCONTRADO' : 'NÃO ENCONTRADO');
+    if (anyTable) {
+      console.log('[Itau Export DEBUG] Tabela encontrada via Estratégia 3!');
+      return anyTable;
+    }
 
+    // Estratégia 4: Buscar qualquer tabela no documento
+    const allTables = document.querySelectorAll('table');
+    console.log('[Itau Export DEBUG] Total de tabelas no documento:', allTables.length);
+    allTables.forEach((t, i) => {
+      console.log(`[Itau Export DEBUG] Tabela ${i}:`, t.className, 'rows:', t.rows?.length);
+    });
+
+    console.log('[Itau Export DEBUG] NENHUMA TABELA ENCONTRADA!');
     return null;
   };
 
   /**
    * Verifica se a página de fatura está carregada verificando
-   * a presença do título "consulta de fatura" ou similar.
+   * a presença de componentes relacionados a cartões/fatura.
    * 
    * @returns {boolean} - true se a página está pronta
    */
   const isInvoicePageReady = () => {
-    const mainComponent = document.querySelector('mf-cartoesconsultafaturapfmf');
-    if (!mainComponent) return false;
-
-    // Busca por h1 com título de fatura
-    const title = queryShadowDOM(mainComponent, 'h1');
-    if (title && title.textContent) {
-      const text = title.textContent.toLowerCase();
-      return text.includes('fatura') || text.includes('consulta');
+    // Verifica todos os seletores configurados
+    for (const selector of INVOICE_SELECTORS) {
+      try {
+        const element = document.querySelector(selector);
+        if (element) {
+          console.log('[Itau Export] Componente de fatura detectado:', selector);
+          return true;
+        }
+      } catch (e) {
+        // Seletor inválido, ignora
+      }
     }
 
     return false;
@@ -405,21 +467,40 @@
    * @returns {Array<Object>} - Lista de transações
    */
   const extractTransactions = () => {
+    console.log('[Itau Export DEBUG] extractTransactions() iniciado');
+
     const table = findTransactionsTable();
     if (!table) {
       console.error('[Itau Export] Tabela de transações não encontrada');
       return [];
     }
 
+    console.log('[Itau Export DEBUG] Tabela encontrada! Tag:', table.tagName, 'Classes:', table.className);
+    console.log('[Itau Export DEBUG] Total de rows:', table.rows?.length);
+
     const transactions = [];
     const rows = table.rows;
     let currentDate = '';
+
+    // Log das primeiras rows para debug
+    for (let i = 0; i < Math.min(5, rows?.length || 0); i++) {
+      const row = rows[i];
+      console.log(`[Itau Export DEBUG] Row ${i}:`, {
+        cells: row.cells?.length,
+        cell0: row.cells?.[0]?.innerText?.trim()?.substring(0, 20),
+        cell1: row.cells?.[1]?.innerText?.trim()?.substring(0, 30),
+        cell2: row.cells?.[2]?.innerText?.trim()?.substring(0, 20)
+      });
+    }
 
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
       const cells = row.cells;
 
-      if (!cells || cells.length < 3) continue;
+      if (!cells || cells.length < 3) {
+        if (i < 5) console.log(`[Itau Export DEBUG] Row ${i}: ignorada (cells < 3)`);
+        continue;
+      }
 
       // Ignora cabeçalho
       const firstCellText = cells[0].innerText.trim().toLowerCase();
@@ -463,6 +544,10 @@
     }
 
     console.log(`[Itau Export] Extraídas ${transactions.length} transações`);
+    if (transactions.length > 0) {
+      console.log('[Itau Export DEBUG] Primeira transação:', transactions[0]);
+      console.log('[Itau Export DEBUG] Última transação:', transactions[transactions.length - 1]);
+    }
     return transactions;
   };
 
@@ -967,70 +1052,58 @@
   };
 
   // ============================================================================
-  // INICIALIZAÇÃO COM MUTATION OBSERVER
+  // INICIALIZAÇÃO COM POLLING CONTÍNUO (MELHOR PARA SPA)
   // ============================================================================
 
   /**
-   * Aguarda o carregamento da página de fatura usando MutationObserver.
-   * Muito mais eficiente que polling com setInterval/setTimeout.
-   * 
-   * @returns {Promise<void>}
+   * Verifica periodicamente se a página de fatura está presente.
+   * Usa polling em vez de MutationObserver porque SPAs podem não
+   * disparar eventos de mutação detectáveis quando navegam entre páginas.
    */
-  const waitForInvoicePage = () => {
-    return new Promise((resolve, reject) => {
-      // Verifica se já está pronto
-      if (isInvoicePageReady()) {
-        console.log('[Itau Export] Página de fatura já carregada');
-        resolve();
-        return;
+  const startPolling = () => {
+    console.log('[Itau Export] Iniciando monitoramento de página...');
+
+    let lastState = false;
+
+    const checkPage = () => {
+      const isReady = isInvoicePageReady();
+      const buttonExists = !!document.getElementById('itau-export-fab');
+
+      // Se a página está pronta e o botão não existe, cria
+      if (isReady && !buttonExists) {
+        console.log('[Itau Export] Página de fatura detectada, criando botão...');
+        createFloatingButton();
+        lastState = true;
       }
+      // Se a página não está pronta mas o botão existe, remove
+      else if (!isReady && buttonExists) {
+        console.log('[Itau Export] Saiu da página de fatura, removendo botão...');
+        const fab = document.getElementById('itau-export-fab');
+        const panel = document.getElementById('itau-export-panel');
+        if (fab) fab.remove();
+        if (panel) panel.remove();
+        lastState = false;
+      }
+    };
 
-      let timeoutId;
+    // Verifica imediatamente
+    checkPage();
 
-      const observer = new MutationObserver((mutations, obs) => {
-        if (isInvoicePageReady()) {
-          console.log('[Itau Export] Página de fatura detectada via MutationObserver');
-          obs.disconnect();
-          clearTimeout(timeoutId);
-          resolve();
-        }
-      });
-
-      // Observa mudanças em todo o documento
-      observer.observe(document.body, {
-        childList: true,
-        subtree: true,
-        attributes: true,
-        characterData: false
-      });
-
-      // Timeout de segurança
-      timeoutId = setTimeout(() => {
-        observer.disconnect();
-        // Mesmo com timeout, tenta criar o botão se houver qualquer conteúdo de fatura
-        if (document.querySelector('mf-cartoesconsultafaturapfmf')) {
-          console.log('[Itau Export] Timeout, mas componente de fatura encontrado');
-          resolve();
-        } else {
-          console.log('[Itau Export] Timeout - página de fatura não encontrada');
-          reject(new Error('Timeout aguardando página de fatura'));
-        }
-      }, OBSERVER_TIMEOUT);
-    });
+    // Continua verificando periodicamente
+    setInterval(checkPage, POLLING_INTERVAL);
   };
 
   /**
    * Inicializa a extensão.
    */
-  const init = async () => {
-    console.log('[Itau Export] Inicializando extensão v3.0.0...');
+  const init = () => {
+    console.log('[Itau Export] Inicializando extensão v3.0.5...');
 
-    try {
-      await waitForInvoicePage();
-      createFloatingButton();
-    } catch (error) {
-      console.log('[Itau Export] Não foi possível inicializar:', error.message);
-      // Não é um erro crítico - pode não estar na página de fatura
+    // Aguarda o DOM estar pronto
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', startPolling);
+    } else {
+      startPolling();
     }
   };
 
@@ -1038,3 +1111,4 @@
   init();
 
 })();
+

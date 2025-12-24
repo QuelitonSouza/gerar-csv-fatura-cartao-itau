@@ -3,7 +3,7 @@
   "name": "Itau Gerar CSV",
   "short_name": "Itau CSV",
   "description": "Adiciona botão para exportação da fatura em aberto para CSV",
-  "version": "3.0.0",
+  "version": "3.0.6",
   "icons": {
     "16": "itau-16.png",
     "32": "itau-16.png",
@@ -13,7 +13,10 @@
   "content_scripts": [
     {
       "matches": [
-        "https://*.itau.com.br/*"
+        "https://*.itau.com.br/*",
+        "https://internetpf6.itau.com.br/*",
+        "https://internetpf5.itau.com.br/*",
+        "https://internetpf4.itau.com.br/*"
       ],
       "exclude_matches": [],
       "js": [

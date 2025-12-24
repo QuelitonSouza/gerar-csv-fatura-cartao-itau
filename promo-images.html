@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Itaú Exportar Fatura - Imagens Promocionais</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #1a1a2e;
+            color: white;
+            min-height: 100vh;
+            padding: 40px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 40px;
+            color: #FF6200;
+        }
+
+        .image-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 60px;
+        }
+
+        .image-section {
+            background: #16213e;
+            padding: 20px;
+            border-radius: 12px;
+        }
+
+        .image-section h2 {
+            margin-bottom: 20px;
+            color: #aaa;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Tile Pequeno 440x280 */
+        .tile-small {
+            width: 440px;
+            height: 280px;
+            background: linear-gradient(135deg, #FF6200 0%, #FF8C00 50%, #FFB347 100%);
+            border-radius: 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 30px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .tile-small::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+        }
+
+        .tile-small .icon-row {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 20px;
+            z-index: 1;
+        }
+
+        .tile-small .icon {
+            font-size: 48px;
+        }
+
+        .tile-small .arrow {
+            font-size: 32px;
+            opacity: 0.8;
+        }
+
+        .tile-small h3 {
+            font-size: 28px;
+            font-weight: 800;
+            text-align: center;
+            z-index: 1;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .tile-small .subtitle {
+            font-size: 16px;
+            opacity: 0.9;
+            margin-top: 8px;
+            z-index: 1;
+        }
+
+        /* Banner Grande 1400x560 */
+        .banner-large {
+            width: 1400px;
+            height: 560px;
+            background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 60px 80px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .banner-large::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 60%;
+            height: 100%;
+            background: linear-gradient(135deg, transparent 0%, rgba(255, 98, 0, 0.1) 100%);
+        }
+
+        .banner-left {
+            z-index: 1;
+            max-width: 600px;
+        }
+
+        .banner-left h2 {
+            font-size: 52px;
+            font-weight: 800;
+            line-height: 1.1;
+            margin-bottom: 24px;
+        }
+
+        .banner-left h2 span {
+            color: #FF6200;
+        }
+
+        .banner-left p {
+            font-size: 22px;
+            opacity: 0.8;
+            line-height: 1.5;
+        }
+
+        .banner-right {
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .feature-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 20px 30px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .feature-card .icon {
+            font-size: 32px;
+        }
+
+        .feature-card span {
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        /* Mockup do Painel */
+        .panel-mockup {
+            width: 640px;
+            height: 400px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .browser-frame {
+            background: #f5f5f5;
+            width: 580px;
+            height: 340px;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .browser-header {
+            background: #e0e0e0;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            padding: 0 12px;
+            gap: 8px;
+        }
+
+        .browser-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .browser-dot.red {
+            background: #ff5f56;
+        }
+
+        .browser-dot.yellow {
+            background: #ffbd2e;
+        }
+
+        .browser-dot.green {
+            background: #27ca40;
+        }
+
+        .browser-content {
+            background: linear-gradient(180deg, #fff 0%, #f9f9f9 100%);
+            height: calc(100% - 36px);
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .itau-mockup {
+            color: #333;
+            text-align: center;
+        }
+
+        .itau-mockup h4 {
+            color: #FF6200;
+            font-size: 18px;
+            margin-bottom: 8px;
+        }
+
+        .itau-mockup p {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .fab-button {
+            position: absolute;
+            right: 30px;
+            bottom: 50px;
+            width: 56px;
+            height: 56px;
+            background: linear-gradient(135deg, #FF6200, #FF8C00);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            font-size: 14px;
+            box-shadow: 0 6px 20px rgba(255, 98, 0, 0.5);
+        }
+
+        .export-panel {
+            position: absolute;
+            right: 30px;
+            bottom: 120px;
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            width: 200px;
+        }
+
+        .export-panel h5 {
+            color: #333;
+            font-size: 14px;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .export-btn {
+            background: linear-gradient(135deg, #FF6200, #FF8C00);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 10px;
+            width: 100%;
+            font-weight: 600;
+            font-size: 13px;
+            margin-bottom: 8px;
+            cursor: pointer;
+        }
+
+        .export-btn.secondary {
+            background: #FFF3E8;
+            color: #FF6200;
+            border: 1px solid #FF6200;
+        }
+
+        .instructions {
+            margin-top: 40px;
+            background: #0d1b2a;
+            padding: 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            color: #aaa;
+        }
+
+        .instructions h3 {
+            color: #FF6200;
+            margin-bottom: 10px;
+        }
+
+        .instructions ol {
+            padding-left: 20px;
+        }
+
+        .instructions li {
+            margin-bottom: 8px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🖼️ Imagens Promocionais - Chrome Web Store</h1>
+
+        <div class="image-grid">
+
+            <!-- Tile Pequeno -->
+            <div class="image-section">
+                <h2>📦 Tile Pequeno (440 x 280 pixels)</h2>
+                <div class="tile-small">
+                    <div class="icon-row">
+                        <span class="icon">💳</span>
+                        <span class="arrow">→</span>
+                        <span class="icon">📊</span>
+                    </div>
+                    <h3>Exportar Fatura Itaú</h3>
+                    <div class="subtitle">CSV • OFX • Clipboard</div>
+                </div>
+            </div>
+
+            <!-- Banner Grande -->
+            <div class="image-section">
+                <h2>🎨 Banner Marquee (1400 x 560 pixels)</h2>
+                <div class="banner-large">
+                    <div class="banner-left">
+                        <h2>Exporte sua <span>fatura do Itaú</span> em segundos</h2>
+                        <p>Transforme sua fatura do cartão de crédito em arquivos CSV ou OFX compatíveis com Excel,
+                            Google Sheets e apps de controle financeiro.</p>
+                    </div>
+                    <div class="banner-right">
+                        <div class="feature-card">
+                            <span class="icon">📥</span>
+                            <span>Exportar para CSV</span>
+                        </div>
+                        <div class="feature-card">
+                            <span class="icon">📊</span>
+                            <span>Exportar para OFX</span>
+                        </div>
+                        <div class="feature-card">
+                            <span class="icon">📋</span>
+                            <span>Copiar para Clipboard</span>
+                        </div>
+                        <div class="feature-card">
+                            <span class="icon">🔒</span>
+                            <span>100% Privado</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Screenshot do Painel -->
+            <div class="image-section">
+                <h2>📸 Screenshot - Painel de Exportação (640 x 400 pixels)</h2>
+                <div class="panel-mockup">
+                    <div class="browser-frame">
+                        <div class="browser-header">
+                            <div class="browser-dot red"></div>
+                            <div class="browser-dot yellow"></div>
+                            <div class="browser-dot green"></div>
+                        </div>
+                        <div class="browser-content">
+                            <div class="itau-mockup">
+                                <h4>🏦 Fatura do Cartão</h4>
+                                <p>Suas transações aparecem aqui...</p>
+                            </div>
+
+                            <div class="export-panel">
+                                <h5>📊 Exportar Fatura</h5>
+                                <button class="export-btn">📥 Exportar CSV</button>
+                                <button class="export-btn">📥 Exportar OFX</button>
+                                <button class="export-btn secondary">📋 Copiar para Clipboard</button>
+                            </div>
+
+                            <div class="fab-button">CSV</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="instructions">
+            <h3>📝 Como capturar as imagens:</h3>
+            <ol>
+                <li>Abra esta página no Chrome</li>
+                <li>Use a ferramenta de desenvolvedor (F12) > Elements</li>
+                <li>Clique com botão direito no elemento desejado > "Capture node screenshot"</li>
+                <li>Ou use extensões como "GoFullPage" ou "FireShot"</li>
+                <li>Salve as imagens nas dimensões corretas</li>
+            </ol>
+        </div>
+    </div>
+</body>
+
+</html>
